@@ -33,11 +33,29 @@ void flag() {
 
 // 90 L
 // -90 R
-void run() {\
+void run() {
+  clear();
+  drawText(20, 20, "RESETTING IMU...", WHITE);
+  drawText(30, 40, "DO NOT MOVE", WHITE);
+  drawText(35, 50, "THE ROBOT", WHITE);
+  flip();
+  delay(1000);
   imu_sensor.Reset();
+  clear();
+  flip();
+
+  motor_controller.forward(153, 600);
   motor_controller.turnDegreeFront(-90);
-  // motor_controller.run_until_black();
-  // motor_controller.rotate_to(-90);
+  motor_controller.forward(153, 100);
+  motor_controller.turnDegreeFront(0);
+  motor_controller.forward(153, 200);
+  motor_controller.turnDegreeFront(90);
+  motor_controller.forward(153, 200);
+  // deploy
+  motor_controller.forward(153, 200);
+
+  motor_controller.backward(153, 600);
+  motor_controller.rotate_to(180);
 
   motor_controller.stop();
 }
@@ -77,10 +95,7 @@ Menu tests = { { { "Test Motor", []() {
                   } },
                  { "Run Until Black Backward", []() {
                     motor_controller.run_until_black(0.0, true, true);
-                  } },
-                 { "Test U-Turn", []() {
-                    motor_controller.u_turn(-1, 700, 7.0);
-                  } }, } };
+                  } } } };
 
 Menu menu = { { { "Run", run },
                 { "Speedrun", [](){

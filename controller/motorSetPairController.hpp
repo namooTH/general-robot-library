@@ -41,22 +41,72 @@ class MotorSetPairController {
             }
         }
 
-        bool backward = false;
-
-        void move(int pow, double direction, bool use_offset = true) {
-            front.move(pow, direction, use_offset);
-            back.move(pow, direction, use_offset);
+        void move(int pow, double direction) {
+            front.move(pow, direction, false);
+            back.move(pow, direction, false);
         }
         
         void stop() {
             front.stop();
             back.stop();
         }
-        
-        void run(float tile = 1.0, int speed = 153, int time_per_time = 550) {
-            move((signbit(tile) ? -1 : 1) * speed, 0.0);
-            delay(time_per_time * fabs(tile));
-            stop();
+
+        float power_factor = 1.0;
+            
+        void forward(int Speed_max, float timer) {
+            int max_speed = Speed_max;
+
+            float kp = 3.0;
+            float kd = 1.0;
+
+            unsigned long timer_forward = millis();
+
+            float previous_error = 0;
+
+            while (1) {
+                unsigned long elapsed_time = millis() - timer_forward;
+                float error = getWorldYaw() - lastPerfectYaw;
+                float derivative = error - previous_error;
+                float pd_value = (error * kp) + (derivative * kd);
+
+                float direction = constrain(pd_value / max_speed, -1.0, 1.0);
+                move(max_speed, direction);
+
+                if (elapsed_time >= timer * power_factor) {
+                    AO();
+                    break;
+                }
+
+                previous_error = error;
+            }
+        }
+
+        void backward(int Speed_max, float timer) {
+            int max_speed = Speed_max;
+
+            float kp = 3.0;
+            float kd = 1.0;
+
+            unsigned long timer_forward = millis();
+
+            float previous_error = 0;
+
+            while (1) {
+                unsigned long elapsed_time = millis() - timer_forward;
+                float error = getWorldYaw() - lastPerfectYaw;
+                float derivative = error - previous_error;
+                float pd_value = (error * kp) + (derivative * kd);
+
+                float direction = constrain(pd_value / max_speed, -1.0, 1.0);
+                move(-max_speed, direction);
+
+                if (elapsed_time >= timer * power_factor) {
+                    AO();
+                    break;
+                }
+
+                previous_error = error;
+            }
         }
 
         int check_front(float black = 0.9) {
@@ -323,10 +373,9 @@ class MotorSetPairController {
             float stop_threshold = 1.0;       // กำหนดความคลาดเคลื่อนที่ยอมรับได้
 
             float previous_error = 0;
-            float target_degree = getWorldYaw() + relative_degree;
 
             while (1) {
-                float error = getWorldYaw() - target_degree;
+                float error = getWorldYaw() - relative_degree;
 
                 int pd_value = abs((error * kp) + ((error - previous_error) * kd));
 
@@ -345,19 +394,6 @@ class MotorSetPairController {
 
             lastPerfectYaw = relative_degree;
             resetIMUKeepWorld();
-        }
-
-        void u_turn(int dir = 1, int time = 570, float wide = 6.5) {
-            int start = millis();
-            float elapsed = 1;
-            while (elapsed < time) {
-                elapsed = millis() - start;
-                move(250, dir * math_curve((elapsed / wide) / time));
-            };
-            rotate_to(norm180(180 - getWorldYaw()));
-            move(250, 0.0, true);
-            delay(100);
-            stop();
         }
 
     private:
