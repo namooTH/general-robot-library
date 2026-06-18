@@ -1,6 +1,6 @@
+#include "rescueConfig.h"
 #include "draw/draw.hpp"
 #include "draw/menu.hpp"
-#include "rescueConfig.h"
 #include "sensor/color.h"
 
 void setup() {

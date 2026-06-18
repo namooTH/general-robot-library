@@ -1,5 +1,4 @@
 #pragma once
-#include <POP32.h>
 #include "rawMotor.h"
 
 struct MotorSet {
@@ -28,12 +27,11 @@ struct MotorSet {
         raw_motor(right, right_speed);
     }
 
-
     void stop() {
         left_speed = 0;
         right_speed = 0;
 
-        motor(left, 0);
-        motor(right, 0);
+        raw_motor(left, 0);
+        raw_motor(right, 0);
     }
 };
