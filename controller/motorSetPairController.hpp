@@ -1,4 +1,7 @@
+// TODO: Document Code
+
 #pragma once
+
 #include "../motor/motorSet.h"
 #include "sensorSetPairController.h"
 #include "../sensor/IMUSensor.h"
@@ -9,6 +12,8 @@
 
 class MotorSetPairController {
     public:
+        const float POWER_FACTOR = 1.0f;
+
         Optional<SensorSetPairController> *sensor_set_pair_controller;
         IMUSensor *imu_sensor;
 
@@ -46,16 +51,31 @@ class MotorSetPairController {
             back.move(pow, direction);
         }
         
+        /**
+         * Stop the robot's motors.
+         * 
+         * ARGS:
+         *     None.
+         *
+         * RETURNS:
+         *     Nothing.
+         */
         void stop() {
             front.stop();
             back.stop();
         }
-
-        float power_factor = 1.0;
-            
-        void forward(int Speed_max, float timer) {
-            int max_speed = Speed_max;
-
+        
+        /**
+         * Move the robot forward for some seconds.
+         *
+         * ARGS:
+         *     int max_speed : The maximum motor speed.
+         *     float timer : Time to move in milliseconds.
+         *
+         * RETURNS:
+         *     Nothing.
+         */
+        void forward(int max_speed, float timer) {
             float kp = 3.0;
             float kd = 1.0;
 
@@ -72,7 +92,7 @@ class MotorSetPairController {
                 float direction = constrain(pd_value / max_speed, -1.0, 1.0);
                 move(max_speed, direction);
 
-                if (elapsed_time >= timer * power_factor) {
+                if (elapsed_time >= timer * POWER_FACTOR) {
                     stop();
                     break;
                 }
@@ -81,9 +101,17 @@ class MotorSetPairController {
             }
         }
 
-        void backward(int Speed_max, float timer) {
-            int max_speed = Speed_max;
-
+        /**
+         * Move the robot backward for some seconds.
+         *
+         * ARGS:
+         *     int max_speed : The maximum motor speed
+         *     float timer : Time to move in milliseconds.
+         *
+         * RETURNS:
+         *     Nothing.
+         */
+        void backward(int max_speed, float timer) {
             float kp = 3.0;
             float kd = 1.0;
 
@@ -100,7 +128,7 @@ class MotorSetPairController {
                 float direction = constrain(pd_value / max_speed, -1.0, 1.0);
                 move(-max_speed, direction);
 
-                if (elapsed_time >= timer * power_factor) {
+                if (elapsed_time >= timer * POWER_FACTOR) {
                     stop();
                     break;
                 }
@@ -109,11 +137,22 @@ class MotorSetPairController {
             }
         }
 
+        /**
+         * Move forward until a sensor detects white.
+         * WARNING: This method's functionality is not verified by namooTH yet.
+         *
+         * ARGS:
+         *     float black [DEFAULT=0.9] : The threshold where it is considered "Black" when the sensor value is less than this [BAD WORDING].
+         *
+         * RETURNS:
+         *     int : How long it takes to detect white in milliseconds.
+         */
         int check_front(float black = 0.9) {
             SensorSet* sensor = &front_sensor;
 
             int start = millis();
 
+            // Move while both left and right sensors detect black
             while (sensor->left->get_normalised() < black && sensor->right->get_normalised() < black) {
                 move(153, 0.0);
             };
@@ -199,7 +238,7 @@ class MotorSetPairController {
         }
         
         /**
-         * Move forward / backward to align with the line.
+         * Move forward / backward to align with the black lines.
          * 
          * ARGS:
          *     bool backward [DEFAULT=true] : Whether move backward (true) or forward (false).
