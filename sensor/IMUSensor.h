@@ -47,13 +47,17 @@ struct IMUSensor{
     // 'precision' : the precision to stop zeroing, default is 0.02f
     // 'time_out' : the maximum time to wait for zeroing, default is 10'000ms
     void AutoZero(float_t precision = 0.02f,int32_t time_out = 10000) {
-        ZeroYaw();
+        Reset();
         unsigned long start = HAL_GetTick();
+        unsigned long lastReset = start;
         while (true) {
-            if (fetchIMU() && fabs(cYaw) <= precision) break;
-            if (HAL_GetTick() - start > time_out) {
-                ZeroYaw();
-                break;
+            unsigned long time = HAL_GetTick();
+            if (fetchIMU()) {
+                if (time - lastReset > 1000) {
+                    if (fabs(cYaw) <= precision && fabs(cYaw) != 0.0) break;                    
+                    Reset();
+                    lastReset = time;
+                }
             }
         }
     }

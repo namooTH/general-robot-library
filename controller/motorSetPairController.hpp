@@ -73,7 +73,7 @@ class MotorSetPairController {
                 move(max_speed, direction);
 
                 if (elapsed_time >= timer * power_factor) {
-                    AO();
+                    stop();
                     break;
                 }
 
@@ -101,7 +101,7 @@ class MotorSetPairController {
                 move(-max_speed, direction);
 
                 if (elapsed_time >= timer * power_factor) {
-                    AO();
+                    stop();
                     break;
                 }
 
@@ -313,7 +313,7 @@ class MotorSetPairController {
          *     Nothing.
          */
         void rotate_to(float absolute_degree) {
-            float error = absolute_degree - getWorldYaw();
+            float error = norm180(absolute_degree - getWorldYaw());
             float dir = (error > 0) ? 1.0f : -1.0f;
             
             if (fabs(error) >= 180) {
@@ -346,7 +346,7 @@ class MotorSetPairController {
                 lastTime = now;
                 if (dt <= 0) dt = 0.001f;
                 
-                error = absolute_degree - yaw;
+                error = norm180(absolute_degree - yaw);
                 float pidOut = yawPID.update(error, dt);
                 dir = (error > 0) ? 1.0f : -1.0f;
 
@@ -397,8 +397,8 @@ class MotorSetPairController {
          *     Nothing.
          */
         void turnDegreeFront(int absolute_degree) {
-            int min_speed = 40;   // ความเร็วต่ำสุด
-            int max_speed = 80;   // ความเร็วสูงสุด
+            int min_speed = 153;   // ความเร็วต่ำสุด
+            int max_speed = 200;   // ความเร็วสูงสุด
 
             float kp = 2.0;  // KP
             float kd = 1.0;  // KD
@@ -417,11 +417,17 @@ class MotorSetPairController {
                 if (pd_value < min_speed) pd_value = min_speed;
                     
                 if (fabs(error) < stop_threshold) {
-                    AO();
+                    stop();
                     break;
                 } else {
-                    if (error <= 0) FD2(10, pd_value);
-                    else if (error > 0) FD2(pd_value, 10);
+                    if (error <= 0) {
+                        front.set(10, pd_value);
+                        back.set(10, pd_value);
+                    }
+                    else if (error > 0) {
+                        front.set(pd_value, 10);
+                        back.set(pd_value, 10);
+                    }
                 }
                 previous_error = error;
             }

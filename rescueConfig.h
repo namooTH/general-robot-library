@@ -34,7 +34,6 @@ SensorSet sensorSets[2] = { { &sensors[0], &sensors[1] },   // Front
 
 // Optional<SensorSetPairController> sensor_controller({ &sensorSets[2], &sensorSets[3] });
 Optional<SensorSetPairController> sensor_controller;
-
 IMUSensor imu_sensor;
 MotorSetPairController  motor_controller  = { &sensor_controller,
                                               &imu_sensor,

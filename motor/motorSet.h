@@ -27,6 +27,11 @@ struct MotorSet {
         raw_motor(right, right_speed);
     }
 
+    void set(int left_motor_speed, int right_motor_speed) {
+        raw_motor(left, left_motor_speed);
+        raw_motor(right, right_motor_speed);
+    }
+
     void stop() {
         left_speed = 0;
         right_speed = 0;
