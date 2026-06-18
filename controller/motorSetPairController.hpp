@@ -198,6 +198,15 @@ class MotorSetPairController {
             };
         }
         
+        /**
+         * Move forward / backward to align with the line.
+         * 
+         * ARGS:
+         *     bool backward [DEFAULT=true] : Whether move backward (true) or forward (false).
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void align(bool backward = true) {
             SensorSet* nearSensor = backward ? &back_sensor : &front_sensor;
             int sensorCount = 1;
@@ -276,6 +285,15 @@ class MotorSetPairController {
             resetIMUToLastPerfect();
         }
         
+        /**
+         * Gets the yaw of the robot.
+         * 
+         * ARGS:
+         *     None.
+         * 
+         * RETURNS:
+         *     float : The robot's current angle.
+         */
         float getWorldYaw() {
             imu_sensor->getYaw();
             return norm180(worldYawOffset + imu_sensor->getYaw());
@@ -285,6 +303,15 @@ class MotorSetPairController {
         
         PID yawPID;
         
+        /**
+         * Rotate the robot to some direction.
+         * 
+         * ARGS:
+         *     float targetDeg : The target degree that the robot needs to rotate to.
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void rotate_to(float targetDeg) {
             targetDeg = norm180(targetDeg);
         
@@ -362,6 +389,15 @@ class MotorSetPairController {
             resetIMUKeepWorld();
         }
 
+        /**
+         * Move forward while turning.
+         *
+         * ARGS:
+         *     int relative_degree : How much to turn in degrees. NOTE: this is absolute, not relative!
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void turnDegreeFront(int relative_degree) {
             int min_speed = 40;   // ความเร็วต่ำสุด
             int max_speed = 80;   // ความเร็วสูงสุด
