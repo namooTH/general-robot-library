@@ -102,18 +102,19 @@ class MotorSetPairController {
                 }
 
                 double direction = 0.0;
-
+                double ln = 0.0;
+                double rn = 0.0;
                 if (sensor_set_pair_controller->hasValue()) {
-                    double ln = backward ? sensor_set_pair_controller->getValue().right->get_normalised() : sensor_set_pair_controller->getValue().left->left->get_normalised();
-                    double rn = backward ? sensor_set_pair_controller->getValue().right->get_normalised() : sensor_set_pair_controller->getValue().right->left->get_normalised();
-    
-                    if (!(ln < 0.9 && rn < 0.9)) {
-                        double dir = ln - rn;
-                        direction = constrain(dir, -1.0, 1.0);
-                    }
-                    
-                    move(DIR*speed, -direction);
+                    ln = backward ? sensor_set_pair_controller->getValue().right->get_normalised() : sensor_set_pair_controller->getValue().left->left->get_normalised();
+                    rn = backward ? sensor_set_pair_controller->getValue().right->get_normalised() : sensor_set_pair_controller->getValue().right->left->get_normalised();    
                 }
+
+                if (!(ln < 0.9 && rn < 0.9)) {
+                    double dir = ln - rn;
+                    direction = constrain(dir, -1.0, 1.0);
+                }
+                
+                move(DIR*speed, -direction);
             };
 
             move(DIR*-pow, 0.0);
@@ -135,13 +136,14 @@ class MotorSetPairController {
             SensorSet* sensor = backward ? &back_sensor : &front_sensor;
 
             while (sensor->get_normalised() > 0.1) {
+                double direction = 0.0;
                 if (sensor_set_pair_controller->hasValue()) {
-                    double direction = sensor_set_pair_controller->getValue().get_direction();
-                    if (fabs(direction) > 0.5) {
-                        move(DIR*127, direction);
-                    } else {
-                        move(DIR*127, 0.0);
-                    }
+                    direction = sensor_set_pair_controller->getValue().get_direction();
+                }
+                if (fabs(direction) > 0.5) {
+                    move(DIR*127, direction);
+                } else {
+                    move(DIR*127, 0.0);
                 }
             };
         }
@@ -307,6 +309,41 @@ class MotorSetPairController {
             stop();
         
             lastPerfectYaw = targetDeg;
+            resetIMUKeepWorld();
+        }
+
+        void turnDegreeFront(int relative_degree) {
+            int min_speed = 40;   // ความเร็วต่ำสุด
+            int max_speed = 80;   // ความเร็วสูงสุด
+
+            float kp = 2.0;  // KP
+            float kd = 1.0;  // KD
+
+            float small_angle_threshold = 5;  // หุ่นยนต์จะใช้ความเร็วต่ำสุดเมื่อเข้าใกล้องศาที่กำหนด
+            float stop_threshold = 1.0;       // กำหนดความคลาดเคลื่อนที่ยอมรับได้
+
+            float previous_error = 0;
+            float target_degree = getWorldYaw() + relative_degree;
+
+            while (1) {
+                float error = getWorldYaw() - target_degree;
+
+                int pd_value = abs((error * kp) + ((error - previous_error) * kd));
+
+                if (pd_value > max_speed) pd_value = max_speed;
+                if (pd_value < min_speed) pd_value = min_speed;
+                    
+                if (fabs(error) < stop_threshold) {
+                    AO();
+                    break;
+                } else {
+                    if (error <= 0) FD2(10, pd_value);
+                    else if (error > 0) FD2(pd_value, 10);
+                }
+                previous_error = error;
+            }
+
+            lastPerfectYaw = relative_degree;
             resetIMUKeepWorld();
         }
 

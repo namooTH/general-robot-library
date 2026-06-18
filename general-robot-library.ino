@@ -33,14 +33,15 @@ void flag() {
 
 // 90 L
 // -90 R
-void run() {
-  motor_controller.run_until_white();
-  motor_controller.run_until_black();
-  motor_controller.rotate_to(-90);
+void run() {\
+  imu_sensor.Reset();
+  motor_controller.turnDegreeFront(-90);
+  // motor_controller.run_until_black();
+  // motor_controller.rotate_to(-90);
 
   motor_controller.stop();
 }
-
+ 
 
 Menu tests = { { { "Test Motor", []() {
                     while (1) motor_controller.move(100, 0.0);

@@ -7,11 +7,11 @@
 #include "sensor/IMUSensor.h"
 #include "sensor/parser.h"
 
-const MotorSet motorSets[2] = { {1, 2, 0, 0, 0, 3},   // Front
-                                {3, 4, 0, 0, 0, 3}};  // Back
+const MotorSet motorSets[2] = { {1, 3, 0, 0, 0, 3},   // Front
+                                {2, 4, 0, 0, 0, 3}};  // Back
 
 Sensor sensors[4] = {
-    {4}, {5},  // Front
+    {8}, {5},  // Front
     {6}, {7},  // Back
 };
 
@@ -22,14 +22,14 @@ Sensor sensors[4] = {
 //     {0}, {1}   // Right
 // };
 
-const String sensor_data = "4;3186;851;2;3596;1099;5;3754;847;3;1111;425;6;3013;882;8;2324;812;0;3679;1188;1;2584;991";
+const String sensor_data = "8;3852;1124;5;1123;159;6;1914;356;7;3414;624";
 
 // SensorSet sensorSets[4] = { { &sensors[0], &sensors[1] },   // Front
 //                             { &sensors[2], &sensors[3] },   // Back
 //                             { &sensors[4], &sensors[5] },   // Left
 //                             { &sensors[6], &sensors[7] } }; // Right
 
-SensorSet sensorSets[4] = { { &sensors[0], &sensors[1] },   // Front
+SensorSet sensorSets[2] = { { &sensors[0], &sensors[1] },   // Front
                             { &sensors[2], &sensors[3] } }; // Back
 
 // Optional<SensorSetPairController> sensor_controller({ &sensorSets[2], &sensorSets[3] });
