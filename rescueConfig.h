@@ -7,8 +7,8 @@
 #include "sensor/IMUSensor.h"
 #include "sensor/parser.h"
 
-const MotorSet motorSets[2] = { {1, 3, 0, 0, 0, 3},   // Front
-                                {2, 4, 0, 0, 0, 3}};  // Back
+const MotorSet motorSets[2] = { {1, 3},   // Front
+                                {2, 4} };  // Back
 
 Sensor sensors[4] = {
     {8}, {5},  // Front
@@ -34,7 +34,6 @@ SensorSet sensorSets[2] = { { &sensors[0], &sensors[1] },   // Front
 
 // Optional<SensorSetPairController> sensor_controller({ &sensorSets[2], &sensorSets[3] });
 Optional<SensorSetPairController> sensor_controller;
-
 IMUSensor imu_sensor;
 MotorSetPairController  motor_controller  = { &sensor_controller,
                                               &imu_sensor,

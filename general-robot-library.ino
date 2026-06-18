@@ -1,6 +1,6 @@
+#include "rescueConfig.h"
 #include "draw/draw.hpp"
 #include "draw/menu.hpp"
-#include "rescueConfig.h"
 #include "sensor/color.h"
 
 void setup() {
@@ -39,8 +39,7 @@ void run() {
   drawText(30, 40, "DO NOT MOVE", WHITE);
   drawText(35, 50, "THE ROBOT", WHITE);
   flip();
-  delay(1000);
-  imu_sensor.Reset();
+  imu_sensor.AutoZero();
   clear();
   flip();
 
