@@ -4,7 +4,7 @@
 #include "controller/sensorSetPairController.h"
 #include "controller/motorSetPairController.hpp"
 #include "draw/draw.hpp"
-#include "sensor/IMUSensorExperimental.h"
+#include "sensor/IMUSensor.h"
 #include "sensor/parser.h"
 
 const MotorSet motorSets[2] = { {1, 3},   // Front

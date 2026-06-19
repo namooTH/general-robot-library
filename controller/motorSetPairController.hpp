@@ -4,7 +4,7 @@
 
 #include "../motor/motorSet.h"
 #include "sensorSetPairController.h"
-#include "../sensor/IMUSensorExperimental.h"
+#include "../sensor/IMUSensor.h"
 #include "../utils/PID.h"
 #include "../utils/mathHelper.h"
 #include "../utils/optional.h"
