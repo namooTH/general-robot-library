@@ -225,15 +225,15 @@ struct IMUSensor {
      *     int time_diff [DEFAULT=1000] : The time difference between old and new measurement in milliseconds, can't be 0.
      * 
      * RETURNS:
-     *     float : The calculated gyro drift. NOTE: This is an approximatation.
+     *     float : The average gyro drift in degrees per millisecond. NOTE: This is an approximatation.
      */
     inline float calculate_drift(int time_diff = 1000) {
         // Return early to prevent zero division.
         if (time_diff == 0) return 0.0f;
 
-        int old_yaw = getYaw();
-        sleep(time_diff);
-        int new_yaw = getYaw();
+        int old_yaw = getYaw(true);
+        delay(time_diff);
+        int new_yaw = getYaw(true);
 
         return (float)(new_yaw - old_yaw) / (float)time_diff;
     }

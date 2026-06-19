@@ -15,19 +15,16 @@ void setup() {
   deflag();
 }
 
-int test_gyro_drift() {
+void test_gyro_drift() {
   clear();
-  drawText(0, 0, "Testing Gyro Drift...", WHITE);
   flip();
 
   float drift = imu_sensor.calculate_drift();
 
-  drawText(0, 50, "Drift=%f", drift);
+  drawTextFmt(0, 0, WHITE, "Drift=%f", drift);
   flip();
 
-  sleep(1000);
-  clear();
-  flip();
+  delay(1000);
 }
 
 void deploy_dice() {
@@ -57,10 +54,9 @@ void run() {
   delay(1000);
   imu_sensor.Reset();
 
+  test_gyro_drift();
   clear();
   flip();
-
-  test_gyro_drift();
 
   motor_controller.run_until_black();
   motor_controller.turn_and_move(-90);
@@ -93,10 +89,10 @@ void run() {
  
 
 Menu tests = { { { "Test Motor", []() {
-                    while (1) motor_controller.move(100, 0.0);
+                    while (true) motor_controller.move(100, 0.0);
                   } },
                  { "Test IMU", []() {
-                    while (1) {
+                    while (true) {
                       clear();
                       drawTextFmt(0, 0, WHITE, "%f", imu_sensor.getYaw());
                       drawTextFmt(0, 10, WHITE, "SW_OK to Reset");
@@ -105,6 +101,10 @@ Menu tests = { { { "Test Motor", []() {
                         imu_sensor.Reset();
                       }
                     }
+                  } },
+                 { "Test Gyro Drift", []() {
+                    test_gyro_drift();
+                    while (true);
                   } },
                  { "Test Dice", deploy_dice },
                  { "Test Flag", flag },
