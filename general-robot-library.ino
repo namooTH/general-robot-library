@@ -42,7 +42,6 @@ void run() {
   flip();
   delay(1000);
   imu_sensor.Reset();
-  imu_sensor.calibrateIMU();
   clear();
   flip();
 

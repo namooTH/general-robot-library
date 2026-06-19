@@ -168,12 +168,11 @@ struct IMUSensor {
         unsigned long lastReset = start;
         while (true) {
             unsigned long time = HAL_GetTick();
-            if (fetchIMU()) {
-                if (time - lastReset > 1000) {
-                    if (fabs(cYaw) <= precision && fabs(cYaw) != 0.0) break;                    
-                    Reset();
-                    lastReset = time;
-                }
+            fetchIMU();
+            if (time - lastReset > 1000) {
+                if (fabs(cYaw) <= precision && fabs(cYaw) != 0.0) break;                    
+                Reset();
+                lastReset = time;
             }
 
             if (lastReset - time >= timeout) break;
@@ -187,29 +186,19 @@ struct IMUSensor {
      *     None.
      * 
      * RETURNS:
-     *     bool : Whether fetching is successful.
+     *     Nothing.
      */
-    inline bool fetchIMU() {
-        if (packetReady)
-        {
-            packetReady = false;
-
-            if (rxBuf[0] == 0xAA && rxBuf[7] == 0x55)
-            {
-                cYaw   = (int16_t)(rxBuf[1] << 8 | rxBuf[2]) / 100.0f;
-                cPitch = (int16_t)(rxBuf[3] << 8 | rxBuf[4]) / 100.0f;
-                cRoll  = (int16_t)(rxBuf[5] << 8 | rxBuf[6]) / 100.0f;
-            }
-            read();
-            
-            status = true;
-            return true;
-        }
-        
+    inline void fetchIMU() {
         read();
+        while(!packetReady);
+        packetReady = false;
 
-        status = false;
-        return false;
+        if (rxBuf[0] == 0xAA && rxBuf[7] == 0x55)
+        {
+            cYaw   = (int16_t)(rxBuf[1] << 8 | rxBuf[2]) / 100.0f;
+            cPitch = (int16_t)(rxBuf[3] << 8 | rxBuf[4]) / 100.0f;
+            cRoll  = (int16_t)(rxBuf[5] << 8 | rxBuf[6]) / 100.0f;
+        }
     }
 
     /**
@@ -223,7 +212,8 @@ struct IMUSensor {
      */
     inline float_t getYaw(bool do_fetch = true){
         if (do_fetch) {
-            if (!fetchIMU()) return cYaw; // If fetch failed, return previous value
+            fetchIMU();
+            return cYaw;
         }
         return cYaw;
     }
