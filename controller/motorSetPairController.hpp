@@ -1,5 +1,3 @@
-// TODO: Document Code
-
 #pragma once
 
 #include "../motor/motorSet.h"
@@ -46,6 +44,16 @@ class MotorSetPairController {
             }
         }
 
+        /**
+         * Move the robot using motors.
+         * 
+         * ARGS:
+         *     int pow : How much motor power you want to use.
+         *     double direction : A number in range of -1.0 to 1.0, negative means left, and positive means right.
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void move(int pow, double direction) {
             front.move(pow, direction);
             back.move(pow, direction);
@@ -105,7 +113,7 @@ class MotorSetPairController {
          * Move the robot backward for some seconds.
          *
          * ARGS:
-         *     int max_speed : The maximum motor speed
+         *     int max_speed : The maximum motor speed.
          *     float timer : Time to move in milliseconds.
          *
          * RETURNS:
