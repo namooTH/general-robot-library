@@ -290,8 +290,8 @@ class MotorSetPairController {
             }
 
 
-            int SEARCH_SPEED = backward ? -100 : 100;
-            int ALIGN_DIR  = backward ? -1 : 1;
+            const int SEARCH_SPEED = backward ? -100 : 100;
+            const int ALIGN_DIR  = backward ? -1 : 1;
             const double BLACK_MIN = 0.5;    // bar detection threshold
             const double CENTER_EPS = 0.1;  // balance tolerance
         
@@ -457,46 +457,49 @@ class MotorSetPairController {
         }
 
         /**
-         * Move forward while turning.
+         * Move forward / backward while turning.
          *
          * ARGS:
          *     int absolute_degree : How much to turn in degrees.
+         *     bool backward [DEFAULT=false] : Whether move backward (true) or forward (false).
          * 
          * RETURNS:
          *     Nothing.
          */
-        void turnDegreeFront(int absolute_degree) {
+        void turn_and_move(int absolute_degree, bool backward = false) {
             int min_speed = 153;   // ความเร็วต่ำสุด
             int max_speed = 200;   // ความเร็วสูงสุด
 
-            float kp = 2.0;  // KP
-            float kd = 1.0;  // KD
+            const float KP = 2.0;  // KP
+            const float KD = 1.0;  // KD
+            const int DIR = backward ? -1 : 1;
+
+            int s1 = 10 * DIR;
 
             float small_angle_threshold = 5;  // หุ่นยนต์จะใช้ความเร็วต่ำสุดเมื่อเข้าใกล้องศาที่กำหนด
             float stop_threshold = 1.0;       // กำหนดความคลาดเคลื่อนที่ยอมรับได้
 
             float previous_error = 0;
 
-            while (1) {
+            while (true) {
                 float error = getWorldYaw() - absolute_degree;
 
-                int pd_value = abs((error * kp) + ((error - previous_error) * kd));
+                int pd_value = abs((error * KP) + ((error - previous_error) * KD));
 
                 if (pd_value > max_speed) pd_value = max_speed;
                 if (pd_value < min_speed) pd_value = min_speed;
+
+                int s2 = pd_value * DIR;
                     
                 if (fabs(error) < stop_threshold) {
                     stop();
                     break;
+                } else if (error <= 0) {
+                    front.set(s1, s2);
+                    back.set(s1, s2);
                 } else {
-                    if (error <= 0) {
-                        front.set(10, pd_value);
-                        back.set(10, pd_value);
-                    }
-                    else if (error > 0) {
-                        front.set(pd_value, 10);
-                        back.set(pd_value, 10);
-                    }
+                    front.set(s2, s1);
+                    back.set(s2, s1);
                 }
                 previous_error = error;
             }
@@ -581,4 +584,4 @@ class MotorSetPairController {
             worldYawOffset = norm180(lastPerfectYaw);
             imu_sensor->Reset();
         }
-    };
+};
