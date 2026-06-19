@@ -2,9 +2,11 @@
 #include <POP32.h>
 #include "../draw/draw.hpp"
 
+/* Some Hacking */
 ACCESS_PRIVATE_FIELD(HardwareSerial, serial_t, _serial);
 auto &IMUserial = access_private::_serial(Serial1);
 
+/* The callback which is called on data write */
 int txCallback(serial_t *) {
     return 0;
 }
@@ -12,6 +14,7 @@ int txCallback(serial_t *) {
 static uint8_t rxBuf[8];
 bool packetReady = false;
 
+/* The callback which is called on data read */
 void rxCallback(serial_t *) {
     packetReady = true;
 }
@@ -74,27 +77,72 @@ struct IMUSensor {
     double_t cYaw=0,cPitch=0,cRoll=0;
     bool status = false;
 
+    /**
+     * Reset the gyro yaw, and enable auto mode (what's that?).
+     * 
+     * ARGS:
+     *     None.
+     * 
+     * RETURNS:
+     *     Nothing.
+     */
     void Reset(){
         ZeroYaw();
         ToggleAutoMode();
     }
 
+    /**
+     * Init Serial1, init Direct Memory Access, and reset IMU sensors.
+     * 
+     * ARGS:
+     *     None.
+     * 
+     * RETURNS:
+     *     Nothing.
+     */
     void Init(){
         Serial1.begin(115200);
         IMU_DMA_Init();
         Reset();
     }
     
+    /**
+     * WTF is this function?
+     * 
+     * ARGS:
+     *     None.
+     * 
+     * RETURNS:
+     *     Nothing.
+     */
     void ToggleAutoMode(){
         write(0XA5);write(0X52);
         delay(60);
     }
 
+    /**
+     * WTF is that function?
+     * 
+     * ARGS:
+     *     None.
+     * 
+     * RETURNS:
+     *     Nothing.
+     */
     void ToggleQueryMode(){
         write(0XA5);write(0X51);
         delay(60);
     }
 
+    /**
+     * Reset the pitch/yaw of the gyroscope.
+     * 
+     * ARGS:
+     *     None.
+     * 
+     * RETURNS:
+     *     Nothing.
+     */
     inline void ZeroYaw() {
         //Zero Pitch
         write(0XA5);write(0X54); 
@@ -104,11 +152,17 @@ struct IMUSensor {
         delay(60);
     }
 
-    // Repeated yaw-zero until near zero
-    //
-    // 'precision' : the precision to stop zeroing, default is 0.02f
-    // 'time_out' : the maximum time to wait for zeroing, default is 10'000ms
-    void AutoZero(float_t precision = 0.02f,int32_t time_out = 10000) {
+    /**
+     * Yaw-zero repeatly until near zero to some precision.
+     * 
+     * ARGS:
+     *     float precision [DEFAULT=0.02] : The precision to stop zero-ing.
+     *     int32_t timeout [DEFAULT=10000] : The maximum time in milliseconds to wait for zero-ing before stoping.
+     * 
+     * RETURNS:
+     *     Nothing.
+     */
+    void AutoZero(float precision = 0.02f, int32_t timeout = 10000) {
         Reset();
         unsigned long start = HAL_GetTick();
         unsigned long lastReset = start;
@@ -121,11 +175,20 @@ struct IMUSensor {
                     lastReset = time;
                 }
             }
+
+            if (lastReset - time >= timeout) break;
         }
     }
 
-    // Fetch data from IMU sensor, return true if successful
-    // pvYaw will be updated with the latest yaw value
+    /**
+     * Fetch data from the IMU sensor, and update angle values.
+     * 
+     * ARGS:
+     *     None.
+     * 
+     * RETURNS:
+     *     bool : Whether fetching is successful.
+     */
     inline bool fetchIMU() {
         if (packetReady)
         {
@@ -149,9 +212,15 @@ struct IMUSensor {
         return false;
     }
 
-    // Get the current yaw value
-    //
-    // 'do_fetch' : true - fetching new data, flase - using previous value
+    /**
+     * Get the current yaw value
+     * 
+     * ARGS:
+     *     bool do_fetch [DEFAULT=true] : Whether fetch new data (true) or use previous value (false).
+     *
+     * RETURNS:
+     *     Nothing.
+     */
     inline float_t getYaw(bool do_fetch = true){
         if (do_fetch) {
             if (!fetchIMU()) return cYaw; // If fetch failed, return previous value
@@ -160,10 +229,28 @@ struct IMUSensor {
     }
 
     private:
+        /**
+         * Wait until the IMU is ready for read/write.
+         * 
+         * ARGS:
+         *     None.
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void waitTillReady() {
             while (IMUserial.handle.gState != HAL_UART_StateTypeDef::HAL_UART_STATE_READY);
         }
 
+        /**
+         * Write a byte of data to IMU using DMA.
+         * 
+         * ARGS:
+         *     uint8_t data : The data.
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void write(uint8_t data) {
             waitTillReady();
 
@@ -174,6 +261,15 @@ struct IMUSensor {
             );
         }
 
+        /**
+         * Read data from IMU using DMA, and store it inside rxBuf.
+         * 
+         * ARGS:
+         *     None.
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void read() {
             waitTillReady();
             
