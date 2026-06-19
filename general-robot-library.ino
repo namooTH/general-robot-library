@@ -31,7 +31,6 @@ void flag() {
   servo(2, 80);
 }
 
-
 // 90 L
 // -90 R
 void run() {
@@ -46,18 +45,19 @@ void run() {
   flip();
 
   motor_controller.run_until_black();
-  motor_controller.backward(153, 50);
   motor_controller.turn_and_move(-90);
+
   motor_controller.run_until_black();
   motor_controller.turn_and_move(0);
+
   motor_controller.run_until_black();
   motor_controller.turn_and_move(95);
+
   motor_controller.run_until_black();
   // deploy
-  motor_controller.forward(153, 200);
 
-  motor_controller.backward(153, 600);
-  motor_controller.turn_and_move(180, true);
+  motor_controller.run_until_black(0.0f, true, true);
+  motor_controller.rotate_to(180);
   motor_controller.forward(153,600);
   motor_controller.turn_and_move(-90);
 

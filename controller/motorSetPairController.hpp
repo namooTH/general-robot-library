@@ -91,7 +91,7 @@ class MotorSetPairController {
 
             float previous_error = 0;
 
-            while (1) {
+            while (true) {
                 unsigned long elapsed_time = millis() - timer_forward;
                 float error = getWorldYaw() - lastPerfectYaw;
                 float derivative = error - previous_error;
@@ -127,7 +127,7 @@ class MotorSetPairController {
 
             float previous_error = 0;
 
-            while (1) {
+            while (true) {
                 unsigned long elapsed_time = millis() - timer_forward;
                 float error = getWorldYaw() - lastPerfectYaw;
                 float derivative = error - previous_error;
@@ -236,7 +236,7 @@ class MotorSetPairController {
             
             if (back_up) {
                 move(DIR*-102, 0.0);
-                delay(180);
+                delay(300);
                 stop();
             }
         }
