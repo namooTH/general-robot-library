@@ -138,11 +138,11 @@ class MotorSetPairController {
         }
 
         /**
-         * Move forward until a sensor detects white.
+         * Move forward until a sensor detects black.
          * WARNING: This method's functionality is not verified by namooTH yet.
          *
          * ARGS:
-         *     float black [DEFAULT=0.9] : The threshold where it is considered "Black" when the sensor value is less than this [BAD WORDING].
+         *     float black [DEFAULT=0.9] : The threshold where it is considered "Black" when the sensor value is more than this [BAD WORDING].
          *
          * RETURNS:
          *     int : How long it takes to detect white in milliseconds.
@@ -152,7 +152,7 @@ class MotorSetPairController {
 
             int start = millis();
 
-            // Move while both left and right sensors detect black
+            // Move while both left and right sensors detect white
             while (sensor->left->get_normalised() < black && sensor->right->get_normalised() < black) {
                 move(153, 0.0);
             };
@@ -168,6 +168,19 @@ class MotorSetPairController {
             return stopt - start;
         }
 
+        /**
+         * Move until a sensor detects black, just like check_front.
+         * 
+         * ARGS:
+         *     float boost [DEFAULT=0.0f] : If non-zero, the robot would boost; starts fast, and slow down steadily.
+         *     bool back_up [DEFAULT=true] : Apply opposite motor force to brake when this is set to true.
+         *     bool backward [DEFAULT=false] : Whether move backward (true) or forward (false).
+         *     int power [DEFAULT=178] : How much motor power you want to use.
+         *     float black [DEFAULT=0.9] : The threshold where it is considered "Black" when the sensor value is less than this.
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void run_until_black(float boost = 0.0f, bool back_up = true, bool backward = false, int pow = 178, float black = 0.9) {
             int DIR  = backward ? -1 : 1;
             SensorSet* sensor = backward ? &back_sensor : &front_sensor;
@@ -220,6 +233,15 @@ class MotorSetPairController {
             }
         }
         
+        /**
+         * Move until the sensor detects white.
+         * 
+         * ARGS:
+         *     bool backward [DEFAULT=false] : Whether move backward (true) or forward (false).
+         * 
+         * RETURNS:
+         *     Nothing.
+         */
         void run_until_white(bool backward = false) {
             int DIR  = backward ? -1 : 1;
             SensorSet* sensor = backward ? &back_sensor : &front_sensor;
