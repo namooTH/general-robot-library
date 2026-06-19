@@ -218,6 +218,26 @@ struct IMUSensor {
         return cYaw;
     }
 
+    /**
+     * Calculate the gyroscope drift.
+     * 
+     * ARGS:
+     *     int time_diff [DEFAULT=1000] : The time difference between old and new measurement in milliseconds, can't be 0.
+     * 
+     * RETURNS:
+     *     float : The calculated gyro drift. NOTE: This is an approximatation.
+     */
+    inline float calculate_drift(int time_diff = 1000) {
+        // Return early to prevent zero division.
+        if (time_diff == 0) return 0.0f;
+
+        int old_yaw = getYaw();
+        sleep(time_diff);
+        int new_yaw = getYaw();
+
+        return (float)(new_yaw - old_yaw) / (float)time_diff;
+    }
+
     private:
         /**
          * Wait until the IMU is ready for read/write.

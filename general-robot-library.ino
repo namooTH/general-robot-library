@@ -15,6 +15,21 @@ void setup() {
   deflag();
 }
 
+int test_gyro_drift() {
+  clear();
+  drawText(0, 0, "Testing Gyro Drift...", WHITE);
+  flip();
+
+  float drift = imu_sensor.calculate_drift();
+
+  drawText(0, 50, "Drift=%f", drift);
+  flip();
+
+  sleep(1000);
+  clear();
+  flip();
+}
+
 void deploy_dice() {
   servo(1, 55);
   delay(300);
@@ -41,8 +56,11 @@ void run() {
   flip();
   delay(1000);
   imu_sensor.Reset();
+
   clear();
   flip();
+
+  test_gyro_drift();
 
   motor_controller.run_until_black();
   motor_controller.turn_and_move(-90);
@@ -60,7 +78,16 @@ void run() {
   motor_controller.rotate_to(180);
   motor_controller.forward(153,600);
   motor_controller.turn_and_move(-90);
-
+  motor_controller.run_until_black();
+  motor_controller.turn_and_move(180);
+  motor_controller.run_until_black();
+  motor_controller.turn_and_move( 90);
+  motor_controller.run_until_black();
+  motor_controller.run_until_black(0.0f, true, true);
+  motor_controller.rotate_to(0);
+  motor_controller.run_until_black();
+  motor_controller.turn_and_move(-90);
+  motor_controller.run_until_black();
   motor_controller.stop();
 }
  
