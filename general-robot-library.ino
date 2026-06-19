@@ -8,6 +8,7 @@ void setup() {
   SerialUSB.begin(9600);
   Wire.setClock(1000000);
   OLED_DMA_Init();
+  imu_sensor.Init();
 
   delay(20);
   servo(1, 175);

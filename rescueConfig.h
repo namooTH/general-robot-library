@@ -4,7 +4,7 @@
 #include "controller/sensorSetPairController.h"
 #include "controller/motorSetPairController.hpp"
 #include "draw/draw.hpp"
-#include "sensor/IMUSensor.h"
+#include "sensor/IMUSensorExperimental.h"
 #include "sensor/parser.h"
 
 const MotorSet motorSets[2] = { {1, 3},   // Front
@@ -127,7 +127,6 @@ void cali_sensors() {
 struct RescueInit {
     RescueInit() {
         parse_sensor_data(sensor_data, &sensors);
-        imu_sensor.Init();
     };
 };
 
