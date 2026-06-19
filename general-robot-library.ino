@@ -3,6 +3,8 @@
 #include "draw/menu.hpp"
 #include "sensor/color.h"
 
+#define MAX_SAFE_DPMS_DRIFT 1e-4
+
 void setup() {
   asm(".global _printf_float");
   SerialUSB.begin(9600);
@@ -15,16 +17,24 @@ void setup() {
   deflag();
 }
 
-void test_gyro_drift() {
+float test_gyro_drift() {
   clear();
-  flip();
 
   float drift = imu_sensor.calculate_drift();
 
-  drawTextFmt(0, 0, WHITE, "Drift=%f", drift);
+  drawTextFmt(0, 0, WHITE, "Drift: %f deg/sec", drift * 1000.0f);
   flip();
 
   delay(1000);
+  return drift;
+}
+
+void reset_gyro_timed(int time) {
+  uint32_t start = HAL_GetTick();
+  imu_sensor.AutoZero(0.02, time);
+
+  // Wait until timeout.
+  while (HAL_GetTick() - start < time);
 }
 
 void deploy_dice() {
@@ -32,6 +42,18 @@ void deploy_dice() {
   delay(300);
   servo(1, 180);
   delay(300);
+  servo(1, 150);
+}
+
+void deploy_dice2() {
+  servo(1, 55);
+
+  reset_gyro_timed(300);
+
+  servo(1, 180);
+
+  reset_gyro_timed(300);
+
   servo(1, 150);
 }
 
@@ -58,32 +80,19 @@ void run() {
   clear();
   flip();
 
+  
   motor_controller.run_until_black();
-  motor_controller.turn_and_move(-90);
+  motor_controller.rotate_to(-90);
 
   motor_controller.run_until_black();
-  motor_controller.turn_and_move(0);
+  motor_controller.rotate_to(0);
 
   motor_controller.run_until_black();
-  motor_controller.turn_and_move(95);
+  motor_controller.rotate_to(90);
 
   motor_controller.run_until_black();
   // deploy
 
-  motor_controller.run_until_black(0.0f, true, true);
-  motor_controller.rotate_to(180);
-  motor_controller.forward(153,600);
-  motor_controller.turn_and_move(-90);
-  motor_controller.run_until_black();
-  motor_controller.turn_and_move(180);
-  motor_controller.run_until_black();
-  motor_controller.turn_and_move( 90);
-  motor_controller.run_until_black();
-  motor_controller.run_until_black(0.0f, true, true);
-  motor_controller.rotate_to(0);
-  motor_controller.run_until_black();
-  motor_controller.turn_and_move(-90);
-  motor_controller.run_until_black();
   motor_controller.stop();
 }
  
@@ -103,7 +112,20 @@ Menu tests = { { { "Test Motor", []() {
                     }
                   } },
                  { "Test Gyro Drift", []() {
-                    test_gyro_drift();
+                    delay(250);
+                    
+                    imu_sensor.Reset();
+                    float drift = test_gyro_drift();
+
+                    // Beep if IMU drift is high.
+                    if (drift > MAX_SAFE_DPMS_DRIFT) {
+                      // Beep 3 times.
+                      for (int i = 0; i < 3; i++) {
+                        beep();
+                        delay(100);
+                      }
+                    }
+
                     while (true);
                   } },
                  { "Test Dice", deploy_dice },

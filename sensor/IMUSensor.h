@@ -74,7 +74,7 @@ extern "C" void DMA1_Channel5_IRQHandler(void)
 }
 
 struct IMUSensor {
-    double_t cYaw=0,cPitch=0,cRoll=0;
+    double cYaw=0,cPitch=0,cRoll=0;
     bool status = false;
 
     /**
@@ -168,14 +168,14 @@ struct IMUSensor {
         unsigned long lastReset = start;
         while (true) {
             unsigned long time = HAL_GetTick();
+            if (time - start >= timeout) break;
+
             fetchIMU();
             if (time - lastReset > 1000) {
                 if (fabs(cYaw) <= precision && fabs(cYaw) != 0.0) break;                    
                 Reset();
                 lastReset = time;
             }
-
-            if (lastReset - time >= timeout) break;
         }
     }
 
@@ -183,26 +183,29 @@ struct IMUSensor {
      * Fetch data from the IMU sensor, and update angle values.
      * 
      * ARGS:
-     *     None.
+     *     int32_t timeout [DEFAULT=100] : The maximum time in milliseconds to fetch data.
      * 
      * RETURNS:
      *     Nothing.
      */
-    inline void fetchIMU() {
-        read();
-        while(!packetReady);
-        packetReady = false;
+    inline void fetchIMU(int32_t timeout = 100) {
+        read(false);
 
-        if (rxBuf[0] == 0xAA && rxBuf[7] == 0x55)
-        {
-            cYaw   = (int16_t)(rxBuf[1] << 8 | rxBuf[2]) / 100.0f;
-            cPitch = (int16_t)(rxBuf[3] << 8 | rxBuf[4]) / 100.0f;
-            cRoll  = (int16_t)(rxBuf[5] << 8 | rxBuf[6]) / 100.0f;
+        if (packetReady) {
+            packetReady = false;
+    
+            if (rxBuf[0] == 0xAA && rxBuf[7] == 0x55)
+            {
+                cYaw   = static_cast<double>((int16_t)(rxBuf[1] << 8 | rxBuf[2])) * 0.01f;
+                cPitch = static_cast<double>((int16_t)(rxBuf[3] << 8 | rxBuf[4])) * 0.01f;
+                cRoll  = static_cast<double>((int16_t)(rxBuf[5] << 8 | rxBuf[6])) * 0.01f;
+            }
         }
+
     }
 
     /**
-     * Get the current yaw value
+     * Get the current yaw value, and assign the result to cYaw.
      * 
      * ARGS:
      *     bool do_fetch [DEFAULT=true] : Whether fetch new data (true) or use previous value (false).
@@ -210,35 +213,43 @@ struct IMUSensor {
      * RETURNS:
      *     Nothing.
      */
-    inline float_t getYaw(bool do_fetch = true){
+    inline float getYaw(bool do_fetch = true){
         if (do_fetch) {
             fetchIMU();
-            return cYaw;
         }
-        return cYaw;
+        
+        return (float)cYaw;
     }
 
     /**
      * Calculate the gyroscope drift.
      * 
      * ARGS:
-     *     int time_diff [DEFAULT=1000] : The time difference between old and new measurement in milliseconds, can't be 0.
+     *     int time [DEFAULT=1000] : The time difference between old and new measurement in milliseconds, can't be 0.
      * 
      * RETURNS:
      *     float : The average gyro drift in degrees per millisecond. NOTE: This is an approximatation.
      */
-    inline float calculate_drift(int time_diff = 1000) {
-        // Return early to prevent zero division.
-        if (time_diff == 0) return 0.0f;
+    inline float calculate_drift(int time = 1000) {
+        time = max(time, 1);
 
-        int old_yaw = getYaw(true);
-        delay(time_diff);
-        int new_yaw = getYaw(true);
+        float old_yaw = getYaw();
+        
+        uint32_t start = HAL_GetTick();
+        while (HAL_GetTick() - start < time) {
+            fetchIMU();
+        }
 
-        return (float)(new_yaw - old_yaw) / (float)time_diff;
+        float new_yaw = getYaw();
+
+        return (new_yaw - old_yaw) / (float)time;
     }
 
     private:
+        bool isReady() {
+            return IMUserial.handle.gState == HAL_UART_StateTypeDef::HAL_UART_STATE_READY;
+        }
+
         /**
          * Wait until the IMU is ready for read/write.
          * 
@@ -249,7 +260,7 @@ struct IMUSensor {
          *     Nothing.
          */
         void waitTillReady() {
-            while (IMUserial.handle.gState != HAL_UART_StateTypeDef::HAL_UART_STATE_READY);
+            while (!isReady());
         }
 
         /**
@@ -261,32 +272,41 @@ struct IMUSensor {
          * RETURNS:
          *     Nothing.
          */
-        void write(uint8_t data) {
-            waitTillReady();
-
-            HAL_UART_Transmit_DMA(
-                &IMUserial.handle,
-                &data,
-                1
-            );
+        void write(uint8_t data, bool wait = true) {
+            if (wait) {
+                waitTillReady();
+            };
+            
+            if (isReady()) {
+                HAL_UART_Transmit_DMA(
+                    &IMUserial.handle,
+                    &data,
+                    1
+                );
+            };
         }
 
         /**
          * Read data from IMU using DMA, and store it inside rxBuf.
          * 
          * ARGS:
-         *     None.
+         *     bool wait : If true then wait for IMU to be ready.
          * 
          * RETURNS:
          *     Nothing.
          */
-        void read() {
-            waitTillReady();
+        void read(bool wait = true) {
+            if (wait) {
+                waitTillReady();
+            }
+
+            if (isReady()) {
+                HAL_UART_Receive_DMA(
+                    &IMUserial.handle,
+                    rxBuf,
+                    8
+                );
+            }
             
-            HAL_UART_Receive_DMA(
-                &IMUserial.handle,
-                rxBuf,
-                8
-            );
         }
 };

@@ -48,7 +48,7 @@ struct Menu {
         int selected = 0;
         while (SW_A());
 
-        while (1) {
+        while (true) {
             uint32_t now = millis();
             float dt = (now - lastTime) / 1000.0f;
 

@@ -236,7 +236,7 @@ class MotorSetPairController {
             
             if (back_up) {
                 move(DIR*-102, 0.0);
-                delay(300);
+                delay(200);
                 stop();
             }
         }
