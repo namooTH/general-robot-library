@@ -497,7 +497,18 @@ class MotorSetPairController {
             
             return continuousYaw;
         }
-
+        
+        /**
+         * Calculate the clamped motor speed from PID output.
+         * 
+         * ARGS:
+         *     float pidOut : The output of some PID to use.
+         *     int stall_speed [DEFAULT=5] : The minimum speed.
+         *     int speed_max [DEFAULT=250] : The maximum speed.
+         * 
+         * RETURNS:
+         *     int : The clamped speed accounted for min / max speed.
+         */
         int speedFromPID(float pidOut, int stall_speed = 5, int speed_max = 250) {
             float mag = fabs(pidOut);
             
@@ -510,6 +521,16 @@ class MotorSetPairController {
             return (int)mag;
         }
         
+        /**
+         * Normalize an angle to range of -180 to 180.
+         * NOTE: This method does not modify the original angle.
+         * 
+         * ARGS:
+         *     float a : The input angle in degrees.
+         * 
+         * RETURNS:
+         *     float : The normalized angle in range of -180 to 180.
+         */
         float norm180(float a) {
             while (a > 180) a -= 360;
             while (a < -180) a += 360;
