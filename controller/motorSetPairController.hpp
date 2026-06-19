@@ -47,8 +47,8 @@ class MotorSetPairController {
         }
 
         void move(int pow, double direction) {
-            front.move(pow, direction, false);
-            back.move(pow, direction, false);
+            front.move(pow, direction);
+            back.move(pow, direction);
         }
         
         /**
@@ -93,7 +93,7 @@ class MotorSetPairController {
                 move(max_speed, direction);
 
                 if (elapsed_time >= timer * POWER_FACTOR) {
-                    AO();
+                    stop();
                     break;
                 }
 
@@ -129,7 +129,7 @@ class MotorSetPairController {
                 move(-max_speed, direction);
 
                 if (elapsed_time >= timer * POWER_FACTOR) {
-                    AO();
+                    stop();
                     break;
                 }
 
@@ -346,15 +346,13 @@ class MotorSetPairController {
          * Rotate the robot to some direction.
          * 
          * ARGS:
-         *     float targetDeg : The target degree that the robot needs to rotate to.
+         *     float absolute_degree : The target degree that the robot needs to rotate to.
          * 
          * RETURNS:
          *     Nothing.
          */
-        void rotate_to(float targetDeg) {
-            targetDeg = norm180(targetDeg);
-        
-            float error = norm180(targetDeg - getWorldYaw());
+        void rotate_to(float absolute_degree) {
+            float error = norm180(absolute_degree - getWorldYaw());
             float dir = (error > 0) ? 1.0f : -1.0f;
             
             if (fabs(error) >= 180) {
@@ -387,7 +385,7 @@ class MotorSetPairController {
                 lastTime = now;
                 if (dt <= 0) dt = 0.001f;
                 
-                error = norm180(targetDeg - yaw);
+                error = norm180(absolute_degree - yaw);
                 float pidOut = yawPID.update(error, dt);
                 dir = (error > 0) ? 1.0f : -1.0f;
 
@@ -424,7 +422,7 @@ class MotorSetPairController {
         
             stop();
         
-            lastPerfectYaw = targetDeg;
+            lastPerfectYaw = absolute_degree;
             resetIMUKeepWorld();
         }
 
@@ -432,14 +430,14 @@ class MotorSetPairController {
          * Move forward while turning.
          *
          * ARGS:
-         *     int relative_degree : How much to turn in degrees. NOTE: this is absolute, not relative!
+         *     int absolute_degree : How much to turn in degrees.
          * 
          * RETURNS:
          *     Nothing.
          */
-        void turnDegreeFront(int relative_degree) {
-            int min_speed = 40;   // ความเร็วต่ำสุด
-            int max_speed = 80;   // ความเร็วสูงสุด
+        void turnDegreeFront(int absolute_degree) {
+            int min_speed = 153;   // ความเร็วต่ำสุด
+            int max_speed = 200;   // ความเร็วสูงสุด
 
             float kp = 2.0;  // KP
             float kd = 1.0;  // KD
@@ -450,7 +448,7 @@ class MotorSetPairController {
             float previous_error = 0;
 
             while (1) {
-                float error = getWorldYaw() - relative_degree;
+                float error = getWorldYaw() - absolute_degree;
 
                 int pd_value = abs((error * kp) + ((error - previous_error) * kd));
 
@@ -458,16 +456,22 @@ class MotorSetPairController {
                 if (pd_value < min_speed) pd_value = min_speed;
                     
                 if (fabs(error) < stop_threshold) {
-                    AO();
+                    stop();
                     break;
                 } else {
-                    if (error <= 0) FD2(10, pd_value);
-                    else if (error > 0) FD2(pd_value, 10);
+                    if (error <= 0) {
+                        front.set(10, pd_value);
+                        back.set(10, pd_value);
+                    }
+                    else if (error > 0) {
+                        front.set(pd_value, 10);
+                        back.set(pd_value, 10);
+                    }
                 }
                 previous_error = error;
             }
 
-            lastPerfectYaw = relative_degree;
+            lastPerfectYaw = absolute_degree;
             resetIMUKeepWorld();
         }
 
