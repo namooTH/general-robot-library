@@ -40,7 +40,8 @@ void run() {
   drawText(30, 40, "DO NOT MOVE", WHITE);
   drawText(35, 50, "THE ROBOT", WHITE);
   flip();
-  imu_sensor.AutoZero();
+  delay(1000);
+  imu_sensor.Reset();
   clear();
   flip();
 

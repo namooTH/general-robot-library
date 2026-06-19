@@ -2,13 +2,33 @@
 #include <POP32.h>
 #include "../draw/draw.hpp"
 
-DMA_HandleTypeDef hdma_usart1_tx;
+ACCESS_PRIVATE_FIELD(HardwareSerial, serial_t, _serial);
+auto &IMUserial = access_private::_serial(Serial1);
 
-void IMU_DMA_Init() {
-    UART_HandleTypeDef *huart = Serial1.getHandle();
+int txCallback(serial_t *) {
+    return 0;
+}
+
+static uint8_t rxBuf[8];
+bool packetReady = false;
+
+void rxCallback(serial_t *) {
+    packetReady = true;
+}
+
+DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart1_rx;
+
+void IMU_DMA_Init()
+{
+    IMUserial.tx_callback = &txCallback;
+    IMUserial.rx_callback = &rxCallback;
+
+    UART_HandleTypeDef *huart = &IMUserial.handle;
 
     __HAL_RCC_DMA1_CLK_ENABLE();
 
+    // TX: USART1_TX -> DMA1_Channel4
     hdma_usart1_tx.Instance                 = DMA1_Channel4;
     hdma_usart1_tx.Init.Direction           = DMA_MEMORY_TO_PERIPH;
     hdma_usart1_tx.Init.PeriphInc           = DMA_PINC_DISABLE;
@@ -17,46 +37,42 @@ void IMU_DMA_Init() {
     hdma_usart1_tx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
     hdma_usart1_tx.Init.Mode                = DMA_NORMAL;
     hdma_usart1_tx.Init.Priority            = DMA_PRIORITY_HIGH;
-
     HAL_DMA_Init(&hdma_usart1_tx);
 
+    // RX: USART1_RX -> DMA1_Channel5
+    hdma_usart1_rx.Instance                 = DMA1_Channel5;
+    hdma_usart1_rx.Init.Direction           = DMA_PERIPH_TO_MEMORY;
+    hdma_usart1_rx.Init.PeriphInc           = DMA_PINC_DISABLE;
+    hdma_usart1_rx.Init.MemInc              = DMA_MINC_ENABLE;
+    hdma_usart1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_usart1_rx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    hdma_usart1_rx.Init.Mode                = DMA_NORMAL;
+    hdma_usart1_rx.Init.Priority            = DMA_PRIORITY_HIGH;
+    HAL_DMA_Init(&hdma_usart1_rx);
+
     __HAL_LINKDMA(huart, hdmatx, hdma_usart1_tx);
+    __HAL_LINKDMA(huart, hdmarx, hdma_usart1_rx);
 
     HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+
+    HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 }
 
-extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-
-}
-
-extern "C" void DMA1_Channel4_IRQHandler(void) {
+extern "C" void DMA1_Channel4_IRQHandler(void)
+{
     HAL_DMA_IRQHandler(&hdma_usart1_tx);
 }
 
+extern "C" void DMA1_Channel5_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_usart1_rx);
+}
+
 struct IMUSensor {
-    void write(uint8_t data) {
-        // while (Serial1.getHandle()->gState != HAL_UART_STATE_READY);
-
-        // HAL_UART_Transmit_DMA(
-        //     Serial1.getHandle(),
-        //     &data,
-        //     1
-        // );
-    }
-
-    void read() {
-        HAL_UART_Receive_DMA(
-            Serial1.getHandle(),
-            rxBuf,
-            8
-        );
-    }
-
     double_t cYaw=0,cPitch=0,cRoll=0;
     bool status = false;
-
-    uint8_t rxBuf[8];
 
     void Reset(){
         ZeroYaw();
@@ -79,8 +95,6 @@ struct IMUSensor {
         delay(60);
     }
 
-    // Set Pitch, Roll and Yaw to zero
-    // WARNING: delay upto 1950ms
     inline void ZeroYaw() {
         //Zero Pitch
         write(0XA5);write(0X54); 
@@ -113,22 +127,24 @@ struct IMUSensor {
     // Fetch data from IMU sensor, return true if successful
     // pvYaw will be updated with the latest yaw value
     inline bool fetchIMU() {
-        static int8_t idx = 0;
-        while (Serial1.available()){
-            uint8_t byte = Serial1.read();
-            if (idx == 0 && byte != 0xAA) continue;
-                rxBuf[idx++] = byte;
-                if (idx == 8) {
-                    idx = 0;
-                    if (rxBuf[7] == 0x55) {
-                        cYaw = (int16_t)(rxBuf[1] << 8 | rxBuf[2]) / 100.0f;
-                        cPitch = (int16_t)(rxBuf[3] << 8 | rxBuf[4]) / 100.0f;
-                        cRoll = (int16_t)(rxBuf[5] << 8 | rxBuf[6]) / 100.0f;
-                        status = true;
-                        return true;
-                    }
+        if (packetReady)
+        {
+            packetReady = false;
+
+            if (rxBuf[0] == 0xAA && rxBuf[7] == 0x55)
+            {
+                cYaw   = (int16_t)(rxBuf[1] << 8 | rxBuf[2]) / 100.0f;
+                cPitch = (int16_t)(rxBuf[3] << 8 | rxBuf[4]) / 100.0f;
+                cRoll  = (int16_t)(rxBuf[5] << 8 | rxBuf[6]) / 100.0f;
             }
+            read();
+            
+            status = true;
+            return true;
         }
+        
+        read();
+
         status = false;
         return false;
     }
@@ -142,4 +158,29 @@ struct IMUSensor {
         }
         return cYaw;
     }
+
+    private:
+        void waitTillReady() {
+            while (IMUserial.handle.gState != HAL_UART_StateTypeDef::HAL_UART_STATE_READY);
+        }
+
+        void write(uint8_t data) {
+            waitTillReady();
+
+            HAL_UART_Transmit_DMA(
+                &IMUserial.handle,
+                &data,
+                1
+            );
+        }
+
+        void read() {
+            waitTillReady();
+            
+            HAL_UART_Receive_DMA(
+                &IMUserial.handle,
+                rxBuf,
+                8
+            );
+        }
 };
